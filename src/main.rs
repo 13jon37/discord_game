@@ -6,16 +6,29 @@ use sdl2::image::{self, LoadTexture, InitFlag};
 use sdl2::keyboard::Keycode;
 use std::time::Duration;
 
+const PLAYER_SPEED: i32 = 20;
+
 struct Player { 
     position: Point,
     sprite: Rect,
+    speed: i32,
+    direction: Direction,
+}
+
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 impl Player {
-    fn new(position: Point, sprite: Rect) -> Player {
+    fn new(position: Point, sprite: Rect, direction: Direction)-> Player {
         Player {
             position: position,
             sprite: sprite,
+            speed: 0,
+            direction: direction,
         }
     }
 
@@ -31,16 +44,50 @@ impl Player {
         Ok(())
     }
 
-    fn input(&self, event: &Event) {
+    fn input(&mut self, event: &Event) {
         match event {
             Event::KeyDown { keycode: Some(Keycode::Left), repeat: false, .. } => {
+                self.speed = PLAYER_SPEED;
+                self.direction = Direction::Left;
+            },
+            Event::KeyDown { keycode: Some(Keycode::Right), repeat: false, .. } => {
+                self.speed = PLAYER_SPEED;
+                self.direction = Direction::Right;
+            },
+            Event::KeyDown { keycode: Some(Keycode::Up), repeat: false, .. } => {
+                self.speed = PLAYER_SPEED;
+                self.direction = Direction::Up;
+            },
+            Event::KeyDown { keycode: Some(Keycode::Down), repeat: false, .. } => {
+                self.speed = PLAYER_SPEED;
+                self.direction = Direction::Down;
+            },
+            Event::KeyUp { keycode: Some(Keycode::Left), repeat: false, .. } |
+            Event::KeyUp { keycode: Some(Keycode::Right), repeat: false, .. } |
+            Event::KeyUp { keycode: Some(Keycode::Up), repeat: false, .. } |
+            Event::KeyUp { keycode: Some(Keycode::Down), repeat: false, .. } => {
+                self.speed = 0;
             },
             _ => {} // ignore the other cases we're not handling manually
         }
     }
 
-    fn update(&self) {
-        println!("Updating nothing rn");
+    fn update(&mut self) {
+        use self::Direction::*;
+        match self.direction {
+            Left => {
+                self.position = self.position.offset(-self.speed, 0);
+            },
+            Right => {
+                self.position = self.position.offset(self.speed, 0);
+            },
+            Up => {
+                self.position = self.position.offset(0, -self.speed);
+            },
+            Down => {
+                self.position = self.position.offset(0, self.speed);
+            },
+        }
     }
 }
 
@@ -74,7 +121,9 @@ fn main() -> Result<(), String> {
     let texture_creator = canvas.texture_creator();
     let texture = texture_creator.load_texture("assets/bardo.png")?;
 
-    let player = Player::new(Point::new(0, 0), Rect::new(0, 0, 26, 36));
+    let mut player = Player::new(Point::new(0, 0),
+                                 Rect::new(0, 0, 26, 36),
+                                 Direction::Down);
 
     'running: loop {
         // Handle events
